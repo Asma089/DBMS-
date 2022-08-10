@@ -45,35 +45,44 @@ INSERT INTO CATALOG VALUES ('3','6','10');
 SELECT * FROM CATALOG;
 SHOW TABLES;
 
-SELECT PNAME
-FROM PARTS
-WHERE PID in            
-(SELECT PID FROM CATALOG
-WHERE EXISTS
-(SELECT *
-FROM SUPPLIERS));
+/*Q.1 pnames of parts for which there is some supplier.*/
+SELECT DISTINCT P.pname
+ FROM Parts P, Catalog C
+ WHERE P.pid = C.pid;
+ 
+ /*Q.2 snames of suppliers who supply every part.*/
+ select S.sname from SUPPLIERS S where not exists (select P.pid from
+PARTS P where not exists (select C.sid from CATALOG C where C.sid =
+S.sid and C.pid = P.pid));
 
-SELECT SNAME
-FROM SUPPLIER
-WHERE SID in
-(SELECT SID FROM CATALOG
-WHERE PID > ALL(
-SELECT PID FROM PARTS));
+/*Q3. snames of suppliers who supply every red part.*/
+select S.sname from SUPPLIERS S where not exists (select P.pid from
+PARTS P where P.color = 'Red' and (not exists (select C.sid from
+CATALOG C where C.sid = S.sid and C.pid = P.pid)));
 
-SELECT SNAME
-FROM SUPPLIERS
-WHERE SID in
-(SELECT SID
-FROM CATALOG WHERE PID in
-(SELECT PID
-FROM PARTS
-WHERE COLOR = 'BLACK'));
+/*Q4. pnames of parts supplied by Acme Widget Suppliers and by no one else.*/
+select P.pname from PARTS P, CATALOG C, SUPPLIERS S where P.pid
+= C.pid and C.sid = S.sid and S.sname = 'Acme Widget' and not exists
+(select * from CATALOG C1, SUPPLIERS S1 where P.pid = C1.pid and
+C1.sid = S1.sid and S1.sname <> 'Acme Widget');
 
-SELECT PNAME
-FROM PARTS
-WHERE PID in
-(SELECT PID
-FROM CATALOG WHERE SID in
-(SELECT SID
-FROM SUPPLIERS
-WHERE SNAME = 'RAYAN'));
+/*Q5.sids of suppliers who charge more for some part than the average cost of that part (averaged over
+all the suppliers who supply that part).*/
+SELECT DISTINCT C.sid FROM Catalog C
+WHERE C.cost > ( SELECT AVG (C1.cost)
+FROM Catalog C1
+WHERE C1.pid = C.pid );
+
+/*Q6. For each part, find the sname of the supplier who charges the most for that part.*/
+SELECT P.pid, S.sname
+FROM Parts P, Suppliers S, Catalog C
+WHERE C.pid = P.pid
+AND C.sid = S.sid
+AND C.cost = (SELECT MAX(C1.cost)
+FROM Catalog C1
+WHERE C1.pid = P.pid);
+
+/*Q7. sids of suppliers who supply only red parts.*/
+select S.sid from SUPPLIERS S where not exists (select P.pid from
+PARTS P where P.color = 'Red' and (not exists (select C.sid from
+CATALOG C where C.sid = S.sid and C.pid = P.pid)));
